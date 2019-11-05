@@ -38,12 +38,12 @@ mydb = db.DB()
   
 # creating enumerations using class 
 class Fields(Enum): 
-    name = 'shem'
-    location = 'yeshuv'
-    phone = 'telefon'
-    address = 'ktovet'
-    media = 'media'
-    details = 'pratim'
+    name = 'שם'
+    location = 'ישוב'
+    phone = 'טלפון'
+    address = 'כתובת'
+    media = 'מדיה'
+    details = 'פרטים'
     
 
 def construct_report(reportId):

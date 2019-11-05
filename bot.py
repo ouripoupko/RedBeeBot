@@ -6,7 +6,7 @@ import db
 from enum import Enum
 import json
 
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
+from telegram.ext import Updater, Filters, CommandHandler, CallbackQueryHandler, ConversationHandler, MessageHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 # Enabling logging
@@ -44,7 +44,8 @@ class Fields(Enum):
     address = 'כתובת'
     media = 'מדיה'
     details = 'פרטים'
-    
+
+REPLY=range(1)
 
 def construct_report(reportId):
     report = mydb.getReport(reportId)
@@ -76,8 +77,17 @@ def button_handler(update, context):
     query = update.callback_query
     data = json.loads(query.data)
     [text, reply_markup] = construct_report(data['id'])
+    context.bot.send_message(update.callback_query.message.chat_id,"please enter info")
+    return REPLY
 
-    query.edit_message_text(text="Selected option: {}".format(query.data), reply_markup = reply_markup)
+def reply_handler(update, context):
+    logger.info("user replied")
+#    query.edit_message_text(text=text, reply_markup = reply_markup)
+    return ConversationHandler.END
+
+def cancel_handler(update, context):
+    logger.info("user cancled")
+    return ConversationHandler.END
 
 
 if __name__ == '__main__':
@@ -85,6 +95,17 @@ if __name__ == '__main__':
     updater = Updater(TOKEN, use_context=True)
 
     updater.dispatcher.add_handler(CommandHandler("report", report_handler))
-    updater.dispatcher.add_handler(CallbackQueryHandler(button_handler))
+
+    conv_handler = ConversationHandler(
+        entry_points=[CallbackQueryHandler(button_handler)],
+
+        states={
+            REPLY: [MessageHandler(Filters.all, reply_handler)]
+        },
+
+        fallbacks=[CommandHandler('cancel', cancel_handler)]
+    )
+
+    updater.dispatcher.add_handler(conv_handler)
 
     run(updater)

@@ -5,9 +5,10 @@ import sys
 import db
 from enum import Enum
 import json
+import pprint
 
 from telegram.ext import Updater, Filters, CommandHandler, CallbackQueryHandler, ConversationHandler, MessageHandler
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ForceReply
 
 # Enabling logging
 logging.basicConfig(level=logging.INFO,
@@ -77,10 +78,22 @@ def button_handler(update, context):
     query = update.callback_query
     data = json.loads(query.data)
     [text, reply_markup] = construct_report(data['id'])
-    context.bot.send_message(update.callback_query.message.chat_id,"please enter info")
+    context.bot.send_message(update.callback_query.message.chat_id,"please enter info", 
+              reply_to_message_id = query.message.message_id, reply_markup = ForceReply())
     return REPLY
 
-def reply_handler(update, context):
+def text_reply_handler(update, context):
+    logger.info("user replied with text")
+    pprint(update)
+#    query.edit_message_text(text=text, reply_markup = reply_markup)
+    return ConversationHandler.END
+
+def image_reply_handler(update, context):
+    logger.info("user replied")
+#    query.edit_message_text(text=text, reply_markup = reply_markup)
+    return ConversationHandler.END
+
+def video_reply_handler(update, context):
     logger.info("user replied")
 #    query.edit_message_text(text=text, reply_markup = reply_markup)
     return ConversationHandler.END
@@ -100,10 +113,12 @@ if __name__ == '__main__':
         entry_points=[CallbackQueryHandler(button_handler)],
 
         states={
-            REPLY: [MessageHandler(Filters.all, reply_handler)]
+            REPLY: [MessageHandler(Filters.text, text_reply_handler),
+                    MessageHandler(Filters.photo, image_reply_handler),
+                    MessageHandler(Filters.video, video_reply_handler)]
         },
 
-        fallbacks=[CommandHandler('cancel', cancel_handler)]
+        fallbacks=[CommandHandler('cancel', cancel_handler)],
     )
 
     updater.dispatcher.add_handler(conv_handler)
